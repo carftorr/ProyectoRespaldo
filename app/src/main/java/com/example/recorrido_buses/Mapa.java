@@ -1,11 +1,18 @@
 package com.example.recorrido_buses;
 
 import androidx.annotation.NonNull;
+import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.FragmentActivity;
+
+import android.Manifest;
 import android.app.Activity;
 import android.app.Dialog;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.graphics.Color;
+import android.location.Location;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.View;
@@ -14,6 +21,13 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ToggleButton;
+
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.StringRequest;
+import com.android.volley.toolbox.Volley;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesUtil;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -22,9 +36,11 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.UiSettings;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
@@ -33,7 +49,12 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.util.ArrayList;
+import java.util.List;
 
 public class Mapa extends FragmentActivity implements OnMapReadyCallback {
     ToggleButton tgbtn;
@@ -176,6 +197,141 @@ public class Mapa extends FragmentActivity implements OnMapReadyCallback {
         LatLng Ecuador=new LatLng(-2.1600473902083617, -79.92242474890296);
         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(Ecuador,zoomLevel));
 
+        Boolean actualPosition = true;
+        JSONObject jso;
+        Double longitudOrigen, latitudOrigen;
+
+        if
+
+        if (ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+
+
+            if (ActivityCompat.shouldShowRequestPermissionRationale(getActivity(),
+                    Manifest.permission.ACCESS_COARSE_LOCATION)) {
+                // Show an explanation to the user *asynchronously* -- don't block
+                // this thread waiting for the user's response! After the user
+                // sees the explanation, try again to request the permission.
+            } else {
+                // No explanation needed; request the permission
+                ActivityCompat.requestPermissions(getActivity(),
+                        new String[]{Manifest.permission.ACCESS_COARSE_LOCATION},
+                        1);
+
+                // MY_PERMISSIONS_REQUEST_READ_CONTACTS is an
+                // app-defined int constant. The callback method gets the
+                // result of the request.
+            }
+
+            if (ActivityCompat.shouldShowRequestPermissionRationale(getActivity(),
+                    Manifest.permission.ACCESS_FINE_LOCATION)) {
+                // Show an explanation to the user *asynchronously* -- don't block
+                // this thread waiting for the user's response! After the user
+                // sees the explanation, try again to request the permission.
+            } else {
+                // No explanation needed; request the permission
+                ActivityCompat.requestPermissions(getActivity(),
+                        new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                        1);
+
+                // MY_PERMISSIONS_REQUEST_READ_CONTACTS is an
+                // app-defined int constant. The callback method gets the
+                // result of the request.
+            }
+
+
+
+
+            return;
+        }
+        mMap.setMyLocationEnabled(true);
+        mMap.setOnMyLocationChangeListener(new GoogleMap.OnMyLocationChangeListener() {
+            @Override
+            public void onMyLocationChange(Location location) {
+
+                //2.942043!4d-75.2522789
+
+
+                if (actualPosition){
+                    latitudOrigen = location.getLatitude();
+                    longitudOrigen = location.getLongitude();
+                    actualPosition=false;
+
+                    LatLng miPosicion = new LatLng(latitudOrigen,longitudOrigen);
+
+                    mMap.addMarker(new MarkerOptions().position(miPosicion).title("Aqui estoy yo"));
+
+                    CameraPosition cameraPosition = new CameraPosition.Builder()
+                            .target(new LatLng(latitudOrigen,longitudOrigen))      // Sets the center of the map to Mountain View
+                            .zoom(17)
+                            .bearing(90)// Sets the zoom
+                            .build();                   // Creates a CameraPosition from the builder
+                    mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
+
+                    String url ="https://maps.googleapis.com/maps/api/directions/json?origin="+latitudOrigen+","+longitudOrigen+"&destination=2.9435667,-75.2458577";
+
+                    RequestQueue queue = Volley.newRequestQueue(getActivity());
+                    StringRequest stringRequest = new StringRequest(Request.Method.GET, url, new Response.Listener<String>() {
+                        @Override
+                        public void onResponse(String response) {
+
+
+                            try {
+                                jso = new JSONObject(response);
+                                trazarRuta(jso);
+                                Log.i("jsonRuta: ",""+response);
+
+                            } catch (JSONException e) {
+                                e.printStackTrace();
+                            }
+
+                        }
+                    }, new Response.ErrorListener() {
+                        @Override
+                        public void onErrorResponse(VolleyError error) {
+
+                        }
+                    });
+
+                    queue.add(stringRequest);
+                }
+            }
+        });
+    }
+
+    private void trazarRuta(JSONObject jso) {
+
+        JSONArray jRoutes;
+        JSONArray jLegs;
+        JSONArray jSteps;
+
+        try {
+            jRoutes = jso.getJSONArray("routes");
+            for (int i=0; i<jRoutes.length();i++){
+
+                jLegs = ((JSONObject)(jRoutes.get(i))).getJSONArray("legs");
+
+                for (int j=0; j<jLegs.length();j++){
+
+                    jSteps = ((JSONObject)jLegs.get(j)).getJSONArray("steps");
+
+                    for (int k = 0; k<jSteps.length();k++){
+
+
+                        String polyline = ""+((JSONObject)((JSONObject)jSteps.get(k)).get("polyline")).get("points");
+                        Log.i("end",""+polyline);
+                        List<LatLng> list = PolyUtil.decode(polyline);
+                        mMap.addPolyline(new PolylineOptions().addAll(list).color(Color.GRAY).width(5));
+
+                    }
+
+                }
+            }
+
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
+    }
     }
 
     public void switchButton(View view) {
