@@ -12,6 +12,10 @@ public class Conductor extends AppCompatActivity {
         setContentView(R.layout.activity_conductor);
     }
 
+
+
+    
+
 }
 
 
