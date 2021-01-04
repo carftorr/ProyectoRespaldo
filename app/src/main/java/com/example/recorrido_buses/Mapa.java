@@ -122,6 +122,8 @@ public class Mapa extends FragmentActivity implements OnMapReadyCallback {
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
+
+
         db_reference.child("Users").child("G2mRQjjDoEU1Chpqc7dksEY2TZj1").child("Bus").child("Parada").addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
@@ -174,30 +176,7 @@ public class Mapa extends FragmentActivity implements OnMapReadyCallback {
         UiSettings uiSettings = mMap.getUiSettings();
         uiSettings.setZoomControlsEnabled(true);
 
-        db_reference.child("Users").child("G2mRQjjDoEU1Chpqc7dksEY2TZj1").child("Bus").child("Placas").addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                for (Marker marker : realTimeMarkersBus) {
-                    marker.remove();
-                }
 
-                for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
-                    MapsCoor mc = snapshot.getValue(MapsCoor.class);
-                    Double lat = mc.getLat();
-                    Double lon = mc.getLon();
-                    MarkerOptions markerOptions = new MarkerOptions().icon(BitmapDescriptorFactory.fromResource(R.drawable.bus2)).anchor(0.0f, 1.0f).title(snapshot.getKey());
-                    markerOptions.position(new LatLng(lat, lon));
-                    tmpRealTimeMarkersBus.add(mMap.addMarker(markerOptions));
-                }
-
-                realTimeMarkersBus.clear();
-                realTimeMarkersBus.addAll(tmpRealTimeMarkersBus);
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError databaseError) {
-            }
-        });
 
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             // TODO: Consider calling
@@ -229,11 +208,11 @@ public class Mapa extends FragmentActivity implements OnMapReadyCallback {
                     CameraPosition cameraPosition = new CameraPosition.Builder()
                             .target(new LatLng(latitudOrigen,longitudOrigen))      // Sets the center of the map to Mountain View
                             .zoom(17)
-                            .bearing(90)// Sets the zoom
                             .build();                   // Creates a CameraPosition from the builder
                     mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
 
-                    String url ="https://maps.googleapis.com/maps/api/directions/json?origin=-1.8095247365851574,-79.54367644431079&destination=-1.8937634665996397,-79.55356814988951";
+                    String url ="https://maps.googleapis.com/maps/api/directions/json?origin=-1.8095247365851574,-79.54367644431079&destination=-1.8937634665996397,-79.55356814988951&mode=DRIVING&key=AIzaSyBFUUDV1Z6mQSMYWOSaJds8dU_gRs9b7EY";
+
 
                     RequestQueue queue = Volley.newRequestQueue(Mapa.this);
                     StringRequest stringRequest = new StringRequest(Request.Method.GET, url, new Response.Listener<String>() {
@@ -244,6 +223,34 @@ public class Mapa extends FragmentActivity implements OnMapReadyCallback {
                             try {
                                 jso = new JSONObject(response);
                                 trazarRuta(jso);
+
+
+                                db_reference.child("Parada").addValueEventListener(new ValueEventListener() {
+                                    @Override
+                                    public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                                        for (Marker marker : realTimeMarkersBus) {
+                                            marker.remove();
+                                        }
+
+                                        for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
+                                            MapsCoor mc = snapshot.getValue(MapsCoor.class);
+                                            Double lat = mc.getLat();
+                                            Double lon = mc.getLon();
+                                            MarkerOptions markerOptions = new MarkerOptions().icon(BitmapDescriptorFactory.fromResource(R.drawable.punto2)).anchor(0.0f, 1.0f).title(snapshot.getKey());
+                                            markerOptions.position(new LatLng(lat, lon));
+                                            tmpRealTimeMarkersBus.add(mMap.addMarker(markerOptions));
+                                        }
+
+                                        realTimeMarkersBus.clear();
+                                        realTimeMarkersBus.addAll(tmpRealTimeMarkersBus);
+                                    }
+
+                                    @Override
+                                    public void onCancelled(@NonNull DatabaseError databaseError) {
+                                    }
+                                });
+
+
                                 Log.i("jsonRuta: ",""+response);
 
                             } catch (JSONException e) {
@@ -254,7 +261,7 @@ public class Mapa extends FragmentActivity implements OnMapReadyCallback {
                     }, new Response.ErrorListener() {
                         @Override
                         public void onErrorResponse(VolleyError error) {
-
+                            Log.i("Error","NO SALE EL MENSAJEEEE HELP!");
                         }
                     });
 
@@ -290,12 +297,17 @@ public class Mapa extends FragmentActivity implements OnMapReadyCallback {
 
                     }
 
+
+
                 }
             }
 
         } catch (JSONException e) {
             e.printStackTrace();
         }
+
+
+
 
     }
 

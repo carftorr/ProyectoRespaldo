@@ -43,8 +43,7 @@ tools:context=".Parada">
     android:layout_height="match_parent"
     android:layout_above="@+id/BottomMenu"
     android:layout_below="@+id/TopBar"
-    android:background="#fff"
-    android:src="@drawable/ciudad2" >
+    android:background="#fff" >
     <ListView
         android:id="@+id/listaParadas"
         android:layout_width="match_parent"
