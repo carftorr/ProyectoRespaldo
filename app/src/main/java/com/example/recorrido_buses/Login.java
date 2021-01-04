@@ -3,7 +3,11 @@ package com.example.recorrido_buses;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -40,6 +44,9 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.Toast;
+
+import static android.Manifest.permission.ACCESS_COARSE_LOCATION;
+import static android.Manifest.permission.ACCESS_FINE_LOCATION;
 
 public class Login extends AppCompatActivity {
     static final int GOOGLE_SIGN_IN = 123;
@@ -102,7 +109,9 @@ public class Login extends AppCompatActivity {
         if (!email.isEmpty() && !pass.isEmpty()) {
 
             if (UtilsNetwork.isOnline(this)) {
-                loginUser();
+                if(validaPermisos()){
+                    loginUser();
+                }
             } else {
                 Toast.makeText(this, "Sin acceso a internet, Verifique su conexión a internet", Toast.LENGTH_SHORT).show();
             }
@@ -112,6 +121,40 @@ public class Login extends AppCompatActivity {
 
     }
 
+
+    private boolean validaPermisos() {
+        if(Build.VERSION.SDK_INT<Build.VERSION_CODES.M){
+            return true;
+        }
+        if((checkSelfPermission(ACCESS_FINE_LOCATION)== PackageManager.PERMISSION_GRANTED)&&(checkSelfPermission(ACCESS_COARSE_LOCATION)==PackageManager.PERMISSION_GRANTED)){
+            return true;
+        }
+
+        if((shouldShowRequestPermissionRationale(ACCESS_FINE_LOCATION))||(shouldShowRequestPermissionRationale(ACCESS_COARSE_LOCATION))){
+            cargarDialogoRecomendacion();
+        }else{
+
+            requestPermissions(new String[]{ACCESS_FINE_LOCATION,ACCESS_COARSE_LOCATION},100);
+        }
+        return false;
+    }
+
+    private void cargarDialogoRecomendacion() {
+        AlertDialog.Builder dialogo = new AlertDialog.Builder(Login.this);
+        dialogo.setTitle("Permisos Desactivados");
+        dialogo.setMessage("Debe aceptar los permisos para el correcto funcionamiento de la App");
+
+        dialogo.setPositiveButton("Aceptar", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    requestPermissions(new String[]{ACCESS_FINE_LOCATION,ACCESS_COARSE_LOCATION},100);
+                }
+            }
+        });
+        dialogo.show();
+
+    }
 
     private void loginUser() {
         mAuth.signInWithEmailAndPassword(email, pass).addOnCompleteListener(new OnCompleteListener<AuthResult>() {
