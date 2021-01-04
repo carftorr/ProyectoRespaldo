@@ -1,11 +1,11 @@
 package com.example.recorrido_buses;
 
-public class User {
+public class Usuario {
 
     private int tipo;
     private String email;
 
-    public User() {
+    public Usuario() {
     }
 
     public int getTipo() {

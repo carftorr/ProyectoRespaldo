@@ -28,6 +28,7 @@ import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
+import com.example.recorrido_buses.models.UserLocation;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesUtil;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -48,7 +49,11 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+import com.google.maps.DirectionsApiRequest;
+import com.google.maps.GeoApiContext;
+import com.google.maps.PendingResult;
 import com.google.maps.android.PolyUtil;
+import com.google.maps.model.DirectionsResult;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -57,7 +62,7 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Mapa extends FragmentActivity implements OnMapReadyCallback {
+public class Mapa extends FragmentActivity implements OnMapReadyCallback, GoogleMap.OnInfoWindowClickListener {
     ToggleButton tgbtn;
     private ImageButton mButtonSignOut;
     private FirebaseAuth mAuth;
@@ -70,6 +75,15 @@ public class Mapa extends FragmentActivity implements OnMapReadyCallback {
     private View popup;
 
     DatabaseReference mDatabase;
+
+
+
+    private static final String TAG = "UserListFragment";
+    private UserLocation mUserPosition;
+    private GeoApiContext mGeoApiContext;
+
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -107,6 +121,40 @@ public class Mapa extends FragmentActivity implements OnMapReadyCallback {
         intent.putExtra("msg", "cerrarSesion");
         startActivity(intent);
     }
+
+
+    private void calculateDirections(Marker marker){
+        Log.d(TAG, "calculateDirections: calculating directions.");
+
+        com.google.maps.model.LatLng destination = new com.google.maps.model.LatLng(
+                marker.getPosition().latitude,
+                marker.getPosition().longitude
+        );
+        DirectionsApiRequest directions = new DirectionsApiRequest(mGeoApiContext);
+
+        directions.alternatives(true);
+        directions.origin(
+                new com.google.maps.model.LatLng(
+                        mUserPosition.getGeo_point().getLatitude(),
+                        mUserPosition.getGeo_point().getLongitude()
+                )
+        );
+        Log.d(TAG, "calculateDirections: destination: " + destination.toString());
+        directions.destination(destination).setCallback(new PendingResult.Callback<DirectionsResult>() {
+            @Override
+            public void onResult(DirectionsResult result) {
+                Log.d(TAG, "onResult: routes: " + result.routes[0].toString());
+                Log.d(TAG, "onResult: geocodedWayPoints: " + result.geocodedWaypoints[0].toString());
+            }
+
+            @Override
+            public void onFailure(Throwable e) {
+                Log.e(TAG, "onFailure: " + e.getMessage() );
+
+            }
+        });
+    }
+
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -331,11 +379,11 @@ public class Mapa extends FragmentActivity implements OnMapReadyCallback {
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
 
                 for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
-                    User user = snapshot.getValue(User.class);
-                    String mail = user.getEmail();
+                    Usuario usuario = snapshot.getValue(Usuario.class);
+                    String mail = usuario.getEmail();
 
                     if (mail.equals(usuario.getEmail())) {
-                        int tipo = user.getTipo();
+                        int tipo = usuario.getTipo();
 
                         Toast.makeText(Mapa.this, "El usuario es "+tipo, Toast.LENGTH_SHORT).show();
 
@@ -354,6 +402,11 @@ public class Mapa extends FragmentActivity implements OnMapReadyCallback {
 
     @Override
     public void onBackPressed() {
+
+    }
+
+    @Override
+    public void onInfoWindowClick(Marker marker) {
 
     }
 }
