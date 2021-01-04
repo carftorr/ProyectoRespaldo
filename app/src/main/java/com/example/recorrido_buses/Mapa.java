@@ -48,6 +48,7 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+import com.google.maps.android.PolyUtil;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -62,27 +63,28 @@ public class Mapa extends FragmentActivity implements OnMapReadyCallback {
     private FirebaseAuth mAuth;
     private GoogleMap mMap;
     private DatabaseReference db_reference;
-    private ArrayList<Marker> tmpRealTimeMarkers=new ArrayList<>();
-    private ArrayList<Marker> realTimeMarkers=new ArrayList<>();
-    private ArrayList<Marker> tmpRealTimeMarkersBus=new ArrayList<>();
-    private ArrayList<Marker> realTimeMarkersBus=new ArrayList<>();
+    private ArrayList<Marker> tmpRealTimeMarkers = new ArrayList<>();
+    private ArrayList<Marker> realTimeMarkers = new ArrayList<>();
+    private ArrayList<Marker> tmpRealTimeMarkersBus = new ArrayList<>();
+    private ArrayList<Marker> realTimeMarkersBus = new ArrayList<>();
     private View popup;
 
     DatabaseReference mDatabase;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_mapa);
 
-        tgbtn=(ToggleButton) findViewById(R.id.tgBtn1);
-        int status= GooglePlayServicesUtil.isGooglePlayServicesAvailable(getApplicationContext());
-        if (status== ConnectionResult.SUCCESS){
+        tgbtn = (ToggleButton) findViewById(R.id.tgBtn1);
+        int status = GooglePlayServicesUtil.isGooglePlayServicesAvailable(getApplicationContext());
+        if (status == ConnectionResult.SUCCESS) {
             SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                     .findFragmentById(R.id.map);
             mapFragment.getMapAsync(this);
             db_reference = FirebaseDatabase.getInstance().getReference();
-        }else{
-            Dialog dialog =GooglePlayServicesUtil.getErrorDialog(status,(Activity)getApplicationContext(),10);
+        } else {
+            Dialog dialog = GooglePlayServicesUtil.getErrorDialog(status, (Activity) getApplicationContext(), 10);
             dialog.show();
         }
 
@@ -98,7 +100,7 @@ public class Mapa extends FragmentActivity implements OnMapReadyCallback {
         finish();
     }
 
-    public void cerrarSesion(View view){
+    public void cerrarSesion(View view) {
         FirebaseAuth.getInstance().signOut();
         finish();
         Intent intent = new Intent(Mapa.this, Login.class);
@@ -107,11 +109,15 @@ public class Mapa extends FragmentActivity implements OnMapReadyCallback {
     }
 
     @Override
-    public boolean onCreateOptionsMenu(Menu menu){
-        MenuInflater inflater=getMenuInflater();
-        inflater.inflate(R.menu.menu,menu);
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.menu, menu);
         return true;
     }
+
+    Boolean actualPosition = true;
+    JSONObject jso;
+    Double longitudOrigen, latitudOrigen;
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
@@ -119,11 +125,11 @@ public class Mapa extends FragmentActivity implements OnMapReadyCallback {
         db_reference.child("Users").child("G2mRQjjDoEU1Chpqc7dksEY2TZj1").child("Bus").child("Parada").addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                for (Marker marker:realTimeMarkers){
+                for (Marker marker : realTimeMarkers) {
                     marker.remove();
                 }
 
-                for (DataSnapshot snapshot : dataSnapshot.getChildren()){
+                for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
                     MapsCoor mc = snapshot.getValue(MapsCoor.class);
                     Double lat = mc.getLat();
                     Double lon = mc.getLon();
@@ -150,32 +156,32 @@ public class Mapa extends FragmentActivity implements OnMapReadyCallback {
 
             @Override
             public View getInfoContents(Marker marker) {
-                if (popup==null){
-                    popup=getLayoutInflater().inflate(R.layout.popupmaps,null);
+                if (popup == null) {
+                    popup = getLayoutInflater().inflate(R.layout.popupmaps, null);
                 }
 
-                TextView tv=(TextView)popup.findViewById(R.id.title);
-                ImageView iv=(ImageView)popup.findViewById(R.id.icon);
+                TextView tv = (TextView) popup.findViewById(R.id.title);
+                ImageView iv = (ImageView) popup.findViewById(R.id.icon);
                 iv.setImageResource(R.drawable.profile);
                 tv.setText(marker.getTitle());
-                tv=(TextView)popup.findViewById(R.id.snippet);
+                tv = (TextView) popup.findViewById(R.id.snippet);
                 tv.setText(marker.getSnippet());
 
                 return (popup);
             }
         });
 
-        UiSettings uiSettings=mMap.getUiSettings();
+        UiSettings uiSettings = mMap.getUiSettings();
         uiSettings.setZoomControlsEnabled(true);
 
         db_reference.child("Users").child("G2mRQjjDoEU1Chpqc7dksEY2TZj1").child("Bus").child("Placas").addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                for (Marker marker:realTimeMarkersBus){
+                for (Marker marker : realTimeMarkersBus) {
                     marker.remove();
                 }
 
-                for (DataSnapshot snapshot : dataSnapshot.getChildren()){
+                for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
                     MapsCoor mc = snapshot.getValue(MapsCoor.class);
                     Double lat = mc.getLat();
                     Double lon = mc.getLon();
@@ -193,63 +199,23 @@ public class Mapa extends FragmentActivity implements OnMapReadyCallback {
             }
         });
 
-        float zoomLevel=10;
-        LatLng Ecuador=new LatLng(-2.1600473902083617, -79.92242474890296);
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(Ecuador,zoomLevel));
-
-        Boolean actualPosition = true;
-        JSONObject jso;
-        Double longitudOrigen, latitudOrigen;
-
-        if
-
-        if (ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-
-
-            if (ActivityCompat.shouldShowRequestPermissionRationale(getActivity(),
-                    Manifest.permission.ACCESS_COARSE_LOCATION)) {
-                // Show an explanation to the user *asynchronously* -- don't block
-                // this thread waiting for the user's response! After the user
-                // sees the explanation, try again to request the permission.
-            } else {
-                // No explanation needed; request the permission
-                ActivityCompat.requestPermissions(getActivity(),
-                        new String[]{Manifest.permission.ACCESS_COARSE_LOCATION},
-                        1);
-
-                // MY_PERMISSIONS_REQUEST_READ_CONTACTS is an
-                // app-defined int constant. The callback method gets the
-                // result of the request.
-            }
-
-            if (ActivityCompat.shouldShowRequestPermissionRationale(getActivity(),
-                    Manifest.permission.ACCESS_FINE_LOCATION)) {
-                // Show an explanation to the user *asynchronously* -- don't block
-                // this thread waiting for the user's response! After the user
-                // sees the explanation, try again to request the permission.
-            } else {
-                // No explanation needed; request the permission
-                ActivityCompat.requestPermissions(getActivity(),
-                        new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                        1);
-
-                // MY_PERMISSIONS_REQUEST_READ_CONTACTS is an
-                // app-defined int constant. The callback method gets the
-                // result of the request.
-            }
-
-
-
-
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
             return;
         }
+
         mMap.setMyLocationEnabled(true);
         mMap.setOnMyLocationChangeListener(new GoogleMap.OnMyLocationChangeListener() {
             @Override
             public void onMyLocationChange(Location location) {
 
                 //2.942043!4d-75.2522789
-
 
                 if (actualPosition){
                     latitudOrigen = location.getLatitude();
@@ -267,9 +233,9 @@ public class Mapa extends FragmentActivity implements OnMapReadyCallback {
                             .build();                   // Creates a CameraPosition from the builder
                     mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
 
-                    String url ="https://maps.googleapis.com/maps/api/directions/json?origin="+latitudOrigen+","+longitudOrigen+"&destination=2.9435667,-75.2458577";
+                    String url ="https://maps.googleapis.com/maps/api/directions/json?origin=-1.8095247365851574,-79.54367644431079&destination=-1.8937634665996397,-79.55356814988951";
 
-                    RequestQueue queue = Volley.newRequestQueue(getActivity());
+                    RequestQueue queue = Volley.newRequestQueue(Mapa.this);
                     StringRequest stringRequest = new StringRequest(Request.Method.GET, url, new Response.Listener<String>() {
                         @Override
                         public void onResponse(String response) {
@@ -331,7 +297,6 @@ public class Mapa extends FragmentActivity implements OnMapReadyCallback {
             e.printStackTrace();
         }
 
-    }
     }
 
     public void switchButton(View view) {
